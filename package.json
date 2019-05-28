@@ -1,0 +1,23 @@
+{
+  "name": "alice-ability_the_best_morning",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "dependencies": {
+    "node-html-parser": "^1.1.15",
+    "weather-js": "^2.0.0",
+    "yandex-dialogs-sdk": "^2.2.0",
+    "yandex.translate": "^1.0.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "alice",
+    "yandex",
+    "alice-ability"
+  ],
+  "author": "Andrew Levada",
+  "license": "MIT"
+}

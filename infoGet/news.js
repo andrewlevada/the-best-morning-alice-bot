@@ -24,12 +24,12 @@ exports.update = () => {
             };
 
             fs.writeFile('news.json', JSON.stringify(fileData), 'utf8', () => {
-                console.log("done");
+                console.log("news updated");
             });
         });
     });
 
     req.on('error', function (e) {
-        console.log('ERROR: ' + e.message);
+        console.log('news ERROR: ' + e.message);
     });
 };

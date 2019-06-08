@@ -21,3 +21,20 @@ exports.get = async (country, city) => {
         }
     });
 };
+
+exports.getTimeZone = async (country, city) => {
+    return new Promise((resolve, reject) => {
+        try {
+            weather.find({
+                search: `${country}, ${city}`,
+                degreeType: 'C'
+            }, async function (err, result) {
+                if (err) resolve("failed");
+    
+                resolve(result[0].location.timezone);
+            });
+        } catch (e) {
+            resolve("failed");
+        }
+    });
+};

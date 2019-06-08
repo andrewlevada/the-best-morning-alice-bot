@@ -1,12 +1,15 @@
 const {
   Alice,
-  Reply
+  Reply,
+  Markup
 } = require('yandex-dialogs-sdk'); // Alice module
 const fs = require("fs"); // File System module
 const translate = require("./infoGet/translate.js"); // Translate module
 const weather = require("./infoGet/weather.js"); // Weathr module
+const dateTime = require("./infoGet/date.js");
 const lines = JSON.parse(fs.readFileSync("./lines.json", "utf-8")); // Get scripted lines
 const alice = new Alice();
+const M = Markup;
 
 require("./dataUpdate.js").start();
 
@@ -15,17 +18,26 @@ alice.command(["Что делать", "Помоги", "Помощь", "Я не �
     if (checkUser(ctx)) { // If user exists
       return Reply.text(await normalReq(ctx));
     } else {
-      return Reply.text(rae(lines.extras.newUser));
+      return {
+        text: rae(lines.extras.newUser),
+        buttons: [M.button('Я в Москве'), M.button('Я в Питере')]
+      };
     }
   }
-  else return Reply.text(rae(lines.extras.help));
+  else return {
+    text: rae(lines.extras.help),
+    buttons: [M.button('Проверка'), M.button('Я в Москве')]
+  };
 });
 
 alice.command(["Проверка", "Проверить"], async (ctx) => {
   if (checkUser(ctx)) { // If user exists
     return Reply.text(await normalReq(ctx));
   } else {
-    return Reply.text(rae(lines.extras.newUser));
+    return {
+      text: rae(lines.extras.cityUnknown),
+      buttons: [M.button('Я в Москве'), M.button('Я в Питере')]
+    };
   }
 });
 
@@ -40,7 +52,10 @@ alice.command(/В .*/ig, async ctx => { // Goto citySet()
 });
 
 alice.any(async ctx => {
-  return Reply.text(rae(lines.extras.other));
+  return {
+    text: rae(lines.extras.other),
+    buttons: [M.button('Проверка'), M.button('Я в Москве')]
+  };
 });
 
 async function citySet(ctx) {
@@ -83,6 +98,12 @@ async function normalReq(ctx) {
 
       let text = "";
       text += `${rae(lines.normal.hello)}`; // Add hello
+
+      let city = checkUser(ctx); // Try to get city
+      if (!city) resolve(rae(lines.normal.gotoCity)); // Reply gotoCity if new user
+
+      text += dateTime.getTime(await weather.getTimeZone(city));
+
       text += `\n\r${rae(lines.normal.news)}`; // Add news intro
 
       let newsData = JSON.parse(fs.readFileSync("./news.json")); // Get news data
@@ -93,10 +114,8 @@ async function normalReq(ctx) {
 
       text += `\n\r${rae(lines.normal.weather)}`; // Add weather intro 
 
-      let city = checkUser(ctx); // Try to get city
       await weather.get(city).then((data) => {
-        if (city) text += data; // Add if city found
-        else resolve(rae(lines.normal.gotoCity)); // Reply gotoCity if new user
+        text += data; // Add if city found
       });
 
       text += `${rae(lines.normal.end)}`; // Add end

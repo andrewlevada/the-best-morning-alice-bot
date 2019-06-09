@@ -19,6 +19,8 @@ exports.update = () => {
                 newsText.push(element.innerHTML);
             });
 
+            newsText = newsFilter(newsText);
+
             let fileData = {
                 news: newsText
             };
@@ -33,3 +35,21 @@ exports.update = () => {
         console.log('news ERROR: ' + e.message);
     });
 };
+
+function newsFilter(newsText) {
+    let finalText = [];
+
+    newsText.forEach(text => {
+        if (text.search(/.*(У|у)краин.*/i) != -1) return;
+        if (text.search(/.*(Р|р)осси.*/i) != -1) return;
+        if (text.search(/.*(В|в)ойн.*/i) != -1) return;
+        if (text.search(/.*(Т|т)рагед.*/i) != -1) return;
+        if (text.search(/.*ДТП.*/i) != -1) return;
+        if (text.search(/.*(П|п)утин.*/i) != -1) return;
+        if (text.search(/.*США.*/i) != -1) return;
+
+        finalText.push(text);
+    });
+
+    return finalText;
+}

@@ -1,10 +1,11 @@
 const fs = require("fs"); // File System module
 const lines = JSON.parse(fs.readFileSync("./lines.json", "utf-8")); // Get scripted lines
-let date = new Date();
 
 exports.getTime = function (timeZone) {
     timeZone = +timeZone - 1;
     if (!Number.isInteger(timeZone)) return rae(lines.date.wrong);
+
+    let date = new Date();
 
     let changed = 0;
     let hours = date.getUTCHours() + timeZone;
@@ -20,6 +21,8 @@ exports.getTime = function (timeZone) {
     }
 
     let minutes = date.getUTCMinutes();
+    if (minutes == 0) minutes = "00";
+    else if (minutes < 10) minutes = "0" + minutes;
 
     let weekDay = date.getUTCDay() + changed;
     if (weekDay == -1) weekDay = 6;

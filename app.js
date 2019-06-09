@@ -13,7 +13,7 @@ const M = Markup;
 
 require("./dataUpdate.js").start();
 
-alice.command(["Что делать", "Помоги", "Помощь", "Я не понимаю", "Что дальше"], async ctx => {
+alice.command(["Что делать", "Помоги", "Помощь", "Я не понимаю", "Что дальше", "Что ты умеешь"], async ctx => {
   if (ctx.data.session.new) {
     if (checkUser(ctx)) { // If user exists
       return Reply.text(await normalReq(ctx));

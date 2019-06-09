@@ -108,8 +108,9 @@ async function normalReq(ctx) {
 
       let newsData = JSON.parse(fs.readFileSync("./news.json")); // Get news data
 
-      for (let i = 0; i < 3; i++) { //
-        text += (`${rae(newsData.news)}. `); // Add three random news to text
+      let startIndex = Math.floor(Math.random() * (newsData.news.length - 3));
+      for (let i = startIndex; i < startIndex + 3; i++) {
+        text += (`${newsData.news[i]}. `); // Add three random news to text
       }
 
       text += `\n\r${rae(lines.normal.weather)}`; // Add weather intro 

@@ -12,8 +12,12 @@ exports.get = async (country, city) => {
     
                 let data = result[0].current;
                 let text = "";
-                text += (await translate.toRussian(data.skytext)).toString() + ". ";
-                text += `Температура ${data.temperature} градусов. `;
+                try {
+                    text += (await translate.toRussian(data.skytext + " weather")).toString().match(/(.*) погода/i)[1] + ". ";
+                } catch (e) {
+                    text += (await translate.toRussian(data.skytext + " weather")).toString() + ". ";
+                }
+                text += `Температура ${data.temperature}°. `;
                 resolve(text);
             });
         } catch (e) {

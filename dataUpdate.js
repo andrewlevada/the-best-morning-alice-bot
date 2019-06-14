@@ -1,5 +1,5 @@
 const config = require("./config.js");
-const news   = require("./infoGet/news.js");
+const news   = require("./modules/news.js");
 
 // Update data in some time
 exports.start = () => {

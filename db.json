@@ -1,7 +1,6 @@
 [
     {
         "userId": "id",
-        "userCountry": "country",
         "userCity": "city"
     }
 ]

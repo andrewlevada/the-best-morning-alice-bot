@@ -1,21 +1,139 @@
 const {
   Alice,
-  Markup
+  Markup,
+  Scene,
+  Stage
 } = require('yandex-dialogs-sdk'); // Alice module
 const fs = require("fs"); // File System module
+const config = require("./config.js");
 const translate = require("./modules/translate.js"); // Translate module
 const weather = require("./modules/weather.js"); // Weathr module
 const dateTime = require("./modules/date.js");
+const dayContent = require("./modules/dayContent.js");
+const logger = require("./modules/logger.js");
+const news = require("./modules/news.js");
+
 const lines = JSON.parse(fs.readFileSync("./lines.json", "utf-8")); // Get scripted lines
+
+const stage = new Stage();
 const alice = new Alice();
+const INFODESK_SCENE = "INFODESK_SCENE";
+const atInfoDesk = new Scene(INFODESK_SCENE);
+const GOTOINFODESK_SCENE = "GOTOINFODESK_SCENE";
+const atgotoInfoDesk = new Scene(GOTOINFODESK_SCENE);
 const M = Markup;
 
+const loggerTotalCounter = () => {
+  return async (ctx, next) => {
+    if (ctx.originalUtterance != "ping") {
+      logger.counter("total", 1);
+    }
+    return next(ctx);
+  };
+};
+
+stage.addScene(atInfoDesk);
+stage.addScene(atgotoInfoDesk);
+alice.use(loggerTotalCounter());
+alice.use(stage.getMiddleware());
+
 require("./dataUpdate.js").start();
+
+logger.general("app started");
+
+
+
+atgotoInfoDesk.command(["Да", "Конечно", "Хочу"], async ctx => {
+  logger.counter("addit");
+  ctx.leave();
+  ctx.enter(INFODESK_SCENE);
+  return {
+    text: lines.infoDesk.longIntro,
+    tts: lines.tts.infoDesk.longIntro
+  };
+});
+
+atgotoInfoDesk.command(["Нет", "Не хочу"], async ctx => {
+  ctx.leave();
+  return {
+    text: lines.infoDesk.exit,
+    tts: lines.tts.infoDesk.exit,
+    end_session: true
+  };
+});
+
+atgotoInfoDesk.any(async ctx => {
+  logger.info(ctx, "atgotoInfoDesk unknown");
+  return {
+    text: "И всё же, хотите узнать больше?",
+    tts: "И всё же, - хот+ите узн+ать б+ольше?"
+  };
+});
+
+
+
+atInfoDesk.command(["Расскажи факт", "Интересный факт", "Факт"], async ctx => {
+  let fact = dayContent.getDayFact();
+  return {
+    text: lines.infoDesk.dayFact + fact.text + lines.infoDesk.next,
+    tts: lines.tts.infoDesk.dayFact + fact.tts + lines.tts.infoDesk.next
+  };
+});
+
+atInfoDesk.command(["Совет дня", "Дай совет", "Совет"], async ctx => {
+  let advice = dayContent.getDayAdvice();
+  return {
+    text: lines.infoDesk.dayAdvice + advice.text + lines.infoDesk.next,
+    tts: lines.tts.infoDesk.dayAdvice + advice.tts + lines.tts.infoDesk.next
+  };
+});
+
+atInfoDesk.command(["Расскажи новости", "Подробнее про новости", "Новости"], async ctx => {
+  return news.getLongNews();
+});
+
+atInfoDesk.command(["Расскажи о погоде", "Подробнее про погоду", "Погода"], async ctx => {
+  let city = checkUser(ctx); // Try to get city
+  let result = await weather.getFullWeather(city);
+
+  if (result.tts) return result;
+  else return {
+    text: result.text,
+    tts: result.text
+  };
+});
+
+atInfoDesk.command(["Нет", "Не хочю", "Не надо", "Стоп", "Хватит"], async ctx => {
+  ctx.leave();
+  return {
+    text: lines.infoDesk.exit,
+    tts: lines.tts.infoDesk.exit,
+    end_session: true
+  };
+});
+
+atInfoDesk.command(["Повтори", "Помощь", "Помоги", "Да", "Что"], async ctx => {
+  return {
+    text: lines.infoDesk.shortIntro,
+    tts: lines.tts.infoDesk.shortIntro
+  };
+});
+
+atInfoDesk.any(async ctx => {
+  logger.info(ctx, "atInfoDesk unknown");
+  return {
+    text: "Я не очень понимаю. " + lines.infoDesk.shortIntro,
+    tts: "Я не +очень поним+аю. " + lines.tts.infoDesk.shortIntro
+  };
+});
+
+
 
 alice.command(["Что делать", "Помоги", "Помощь", "Я не понимаю", "Что дальше", "Что ты умеешь"], async ctx => {
   if (ctx.data.session.new) {
     if (checkUser(ctx)) { // If user exists
       let result = await normalReq(ctx);
+      ctx.enter(GOTOINFODESK_SCENE);
       return {
         text: result[0],
         tts: result[1]
@@ -41,6 +159,7 @@ alice.command(["Что делать", "Помоги", "Помощь", "Я не �
 alice.command(["Проверка", "Проверить"], async (ctx) => {
   if (checkUser(ctx)) { // If user exists
     let result = await normalReq(ctx);
+    ctx.enter(GOTOINFODESK_SCENE);
     return {
       text: result[0],
       tts: result[1]
@@ -55,21 +174,24 @@ alice.command(["Проверка", "Проверить"], async (ctx) => {
   }
 });
 
-alice.command(/Мой город .*/ig, async ctx => { // Goto citySet()
+alice.command(/Мой город .+/ig, async ctx => { // Goto citySet()
+  logger.info(ctx, "cityReq");
   let result = await citySet(ctx);
   return {
     text: result[0],
     tts: result[1]
   };
 });
-alice.command(/Я в .*/ig, async ctx => { // Goto citySet()
+alice.command(/Я в .+/ig, async ctx => { // Goto citySet()
+  logger.info(ctx, "cityReq");
   let result = await citySet(ctx);
   return {
     text: result[0],
     tts: result[1]
   };
 });
-alice.command(/В .*/ig, async ctx => { // Goto citySet()
+alice.command(/В .+/ig, async ctx => { // Goto citySet()
+  logger.info(ctx, "cityReq");
   let result = await citySet(ctx);
   return {
     text: result[0],
@@ -78,6 +200,7 @@ alice.command(/В .*/ig, async ctx => { // Goto citySet()
 });
 
 alice.command(/Спасибо.*/, async ctx => {
+  logger.info(ctx, "thanksReq");
   let i = rai(lines.extras.thanks);
   return {
     text: lines.extras.thanks[i],
@@ -87,6 +210,7 @@ alice.command(/Спасибо.*/, async ctx => {
 });
 
 alice.any(async ctx => {
+  logger.info(ctx, "root unknown");
   let i = rai(lines.extras.other);
   return {
     text: lines.extras.other[i],
@@ -95,8 +219,9 @@ alice.any(async ctx => {
   };
 });
 
+
+
 async function citySet(ctx) {
-  console.log("city req");
   try {
     let cityData = ctx.nlu.entities[0].value.city; // Get city from messege
     if (cityData.substring(0, 5) == "город") cityData = cityData.substring(6, cityData.length); // Remove "город" from messege
@@ -115,7 +240,6 @@ async function citySet(ctx) {
     // Create new user in db
     fileData.push({
       userId: ctx.userId,
-      userCountry: "Russia",
       userCity: cityData
     });
 
@@ -128,6 +252,7 @@ async function citySet(ctx) {
       let i = rai(lines.city.changed);
       return [lines.city.changed[i], lines.tts.city.changed[i]]; // If changed
     } else {
+      logger.error("citySet", e);
       let i = rai(lines.city.failed);
       return [lines.city.failed[i], lines.tts.city.failed[i]]; // If failed
     }
@@ -137,7 +262,7 @@ async function citySet(ctx) {
 async function normalReq(ctx) {
   return new Promise(async (resolve, reject) => { // Function as promise
     try {
-      console.log("normal req");
+      logger.counter("normal");
 
       let text = "";
       let tts = "";
@@ -182,19 +307,17 @@ async function normalReq(ctx) {
       text += lines.normal.end[i];
       tts += lines.tts.normal.end[i];
 
+      text += lines.normal.more;
+      tts += lines.tts.normal.more;
+
       resolve([text, tts]); // Send text
-    } catch (ex) {
-      console.log("normalreq error   " + ex);
+    } catch (e) {
+      logger.error("normalReq", e);
       resolve(["Что-то мне не хорошо. Наверное я заболела. Проведайте меня позже.",
         "Что-то мне не хорошо+. - Наве+рное я заболе+ла. Прове+дайте меня+ по+зже."
       ]);
     }
   });
-}
-
-function rae(array) { // Random array element
-  let index = Math.floor(Math.random() * array.length);
-  return array[index];
 }
 
 function rai(array) {
@@ -217,4 +340,4 @@ function search(nameKey, myArray) {
   return false;
 }
 
-const server = alice.listen(3000, '/'); // Start server
+const server = alice.listen(config.params.port, '/'); // Start server

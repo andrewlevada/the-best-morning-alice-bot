@@ -1,5 +1,9 @@
 config.js
 .jshintrc
 news.json
+longNews.json
 logo.png
 ssl
+log
+dayAdvices.json
+dayFacts.json

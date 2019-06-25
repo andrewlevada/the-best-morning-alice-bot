@@ -43,8 +43,9 @@ logger.general("app started");
 
 
 
-atgotoInfoDesk.command(["Да", "Конечно", "Хочу"], async ctx => {
+atgotoInfoDesk.command(/да/ig, async ctx => {
   logger.counter("addit");
+  logger.info(ctx, "atgotoInfoDesk yes");
   ctx.leave();
   ctx.enter(INFODESK_SCENE);
   return {
@@ -53,7 +54,8 @@ atgotoInfoDesk.command(["Да", "Конечно", "Хочу"], async ctx => {
   };
 });
 
-atgotoInfoDesk.command(["Нет", "Не хочу"], async ctx => {
+atgotoInfoDesk.command(/не/ig, async ctx => {
+  logger.info(ctx, "atgotoInfoDesk no");
   ctx.leave();
   return {
     text: lines.infoDesk.exit,
@@ -65,14 +67,15 @@ atgotoInfoDesk.command(["Нет", "Не хочу"], async ctx => {
 atgotoInfoDesk.any(async ctx => {
   logger.info(ctx, "atgotoInfoDesk unknown");
   return {
-    text: "И всё же, хотите узнать больше?",
-    tts: "И всё же, - хот+ите узн+ать б+ольше?"
+    text: lines.infoDesk.enter,
+    tts: lines.tts.infoDesk.enter
   };
 });
 
 
 
-atInfoDesk.command(["Расскажи факт", "Интересный факт", "Факт"], async ctx => {
+atInfoDesk.command(/Факт/ig, async ctx => {
+  logger.info(ctx, "atInfoDesk fact");
   let fact = dayContent.getDayFact();
   return {
     text: lines.infoDesk.dayFact + fact.text + lines.infoDesk.next,
@@ -80,7 +83,8 @@ atInfoDesk.command(["Расскажи факт", "Интересный факт"
   };
 });
 
-atInfoDesk.command(["Совет дня", "Дай совет", "Совет"], async ctx => {
+atInfoDesk.command(/Совет/ig, async ctx => {
+  logger.info(ctx, "atInfoDesk advice");
   let advice = dayContent.getDayAdvice();
   return {
     text: lines.infoDesk.dayAdvice + advice.text + lines.infoDesk.next,
@@ -88,11 +92,13 @@ atInfoDesk.command(["Совет дня", "Дай совет", "Совет"], asy
   };
 });
 
-atInfoDesk.command(["Расскажи новости", "Подробнее про новости", "Новости"], async ctx => {
+atInfoDesk.command(/Новост/ig, async ctx => {
+  logger.info(ctx, "atInfoDesk news");
   return news.getLongNews();
 });
 
-atInfoDesk.command(["Расскажи о погоде", "Подробнее про погоду", "Погода"], async ctx => {
+atInfoDesk.command(/Погод/ig, async ctx => {
+  logger.info(ctx, "atInfoDesk weather");
   let city = checkUser(ctx); // Try to get city
   let result = await weather.getFullWeather(city);
 
@@ -104,6 +110,7 @@ atInfoDesk.command(["Расскажи о погоде", "Подробнее пр
 });
 
 atInfoDesk.command(["Нет", "Не хочю", "Не надо", "Стоп", "Хватит"], async ctx => {
+  logger.info(ctx, "atInfoDesk leave");
   ctx.leave();
   return {
     text: lines.infoDesk.exit,
@@ -113,6 +120,7 @@ atInfoDesk.command(["Нет", "Не хочю", "Не надо", "Стоп", "Х�
 });
 
 atInfoDesk.command(["Повтори", "Помощь", "Помоги", "Да", "Что"], async ctx => {
+  logger.info(ctx, "atInfoDesk help");
   return {
     text: lines.infoDesk.shortIntro,
     tts: lines.tts.infoDesk.shortIntro
@@ -132,6 +140,7 @@ atInfoDesk.any(async ctx => {
 alice.command(["Что делать", "Помоги", "Помощь", "Я не понимаю", "Что дальше", "Что ты умеешь"], async ctx => {
   if (ctx.data.session.new) {
     if (checkUser(ctx)) { // If user exists
+      logger.info(ctx, "root newSessionHello");
       let result = await normalReq(ctx);
       ctx.enter(GOTOINFODESK_SCENE);
       return {
@@ -139,6 +148,7 @@ alice.command(["Что делать", "Помоги", "Помощь", "Я не �
         tts: result[1]
       };
     } else {
+      logger.info(ctx, "root newUserHello");
       let i = rai(lines.extras.newUser);
       return {
         text: lines.extras.newUser[i],
@@ -147,6 +157,7 @@ alice.command(["Что делать", "Помоги", "Помощь", "Я не �
       };
     }
   } else {
+    logger.info(ctx, "root help");
     let i = rai(lines.extras.help);
     return {
       text: lines.extras.help[i],
@@ -156,8 +167,9 @@ alice.command(["Что делать", "Помоги", "Помощь", "Я не �
   }
 });
 
-alice.command(["Проверка", "Проверить"], async (ctx) => {
+alice.command(["Проверка", "Проверить", "Доброе утро"], async (ctx) => {
   if (checkUser(ctx)) { // If user exists
+    logger.info(ctx, "root normalReq");
     let result = await normalReq(ctx);
     ctx.enter(GOTOINFODESK_SCENE);
     return {
@@ -165,6 +177,7 @@ alice.command(["Проверка", "Проверить"], async (ctx) => {
       tts: result[1]
     };
   } else {
+    logger.info(ctx, "root mainCityUnknown");
     let i = rai(lines.extras.cityUnknown);
     return {
       text: lines.extras.cityUnknown[i],
@@ -174,24 +187,24 @@ alice.command(["Проверка", "Проверить"], async (ctx) => {
   }
 });
 
-alice.command(/Мой город .+/ig, async ctx => { // Goto citySet()
-  logger.info(ctx, "cityReq");
+alice.command(/^Мой город .+/ig, async ctx => { // Goto citySet()
+  logger.info(ctx, "root cityReq");
   let result = await citySet(ctx);
   return {
     text: result[0],
     tts: result[1]
   };
 });
-alice.command(/Я в .+/ig, async ctx => { // Goto citySet()
-  logger.info(ctx, "cityReq");
+alice.command(/^Я в .+/ig, async ctx => { // Goto citySet()
+  logger.info(ctx, "root cityReq");
   let result = await citySet(ctx);
   return {
     text: result[0],
     tts: result[1]
   };
 });
-alice.command(/В .+/ig, async ctx => { // Goto citySet()
-  logger.info(ctx, "cityReq");
+alice.command(/^В .+/ig, async ctx => { // Goto citySet()
+  logger.info(ctx, "root cityReq");
   let result = await citySet(ctx);
   return {
     text: result[0],
@@ -199,8 +212,8 @@ alice.command(/В .+/ig, async ctx => { // Goto citySet()
   };
 });
 
-alice.command(/Спасибо.*/, async ctx => {
-  logger.info(ctx, "thanksReq");
+alice.command(/Спасибо.*/ig, async ctx => {
+  logger.info(ctx, "root thanksReq");
   let i = rai(lines.extras.thanks);
   return {
     text: lines.extras.thanks[i],
@@ -209,14 +222,47 @@ alice.command(/Спасибо.*/, async ctx => {
   };
 });
 
-alice.any(async ctx => {
-  logger.info(ctx, "root unknown");
-  let i = rai(lines.extras.other);
+alice.command(/Алиса.*/ig, async ctx => {
+  logger.info(ctx, "aliceReq");
   return {
-    text: lines.extras.other[i],
-    tts: lines.tts.extras.other[i],
-    buttons: [M.button('Проверка'), M.button('Я в Москве')]
+    text: lines.extras.other[4],
+    tts: lines.tts.extras.other[4]
   };
+});
+
+alice.command(/Буди.*/ig, async ctx => {
+  logger.info(ctx, "root noAbility");
+  return {
+    text: lines.extras.noAbility,
+    tts: lines.tts.extras.noAbility
+  };
+});
+
+alice.command("Курс валют", async ctx => {
+  logger.info(ctx, "root noAbility");
+  return {
+    text: lines.extras.noAbility,
+    tts: lines.tts.extras.noAbility
+  };
+});
+
+alice.any(async ctx => {
+  if (!ctx.nlu.entities[0] || (ctx.nlu.entities[0].type != "YANDEX.GEO")) {
+    logger.info(ctx, "root unknown");
+    let i = rai(lines.extras.other);
+    return {
+      text: lines.extras.other[i],
+      tts: lines.tts.extras.other[i],
+      buttons: [M.button('Проверка'), M.button('Я в Москве')]
+    };
+  } else {
+    logger.info(ctx, "root cityReq");
+    let result = await citySet(ctx);
+    return {
+      text: result[0],
+      tts: result[1]
+    };
+  }
 });
 
 

@@ -4,7 +4,7 @@
   "description": "",
   "main": "app.js",
   "dependencies": {
-    "node-html-parser": "^1.1.15",
+    "node-html-parser": "^4.0.0",
     "weather-js": "^2.0.0",
     "yandex-dialogs-sdk": "^2.2.0",
     "yandex.translate": "^1.0.1"
